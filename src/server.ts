@@ -6,7 +6,7 @@ import { Server } from "socket.io";
 import dotenv from "dotenv";
 
 import socketAuth from "./middleware/socketAuth";
-import propertySocketHandlers from "./socket/propertySocketHandlers";
+import propertyInteractionSocketHandlers from "./socket/propertyInteractionSocketHandlers";
 import settingsRoutes from "./routes/settingsRoutes";
 import userRoutes from "./routes/userRoutes";
 import { AuthenticatedSocket } from "./types";
@@ -63,8 +63,8 @@ io.on("connection", (socket) => {
   const authenticatedSocket = socket as AuthenticatedSocket;
   console.log(`User connected: ${authenticatedSocket.user._id}`);
 
-  // Register property socket handlers
-  propertySocketHandlers(authenticatedSocket, io);
+  // Register property interaction socket handlers
+  propertyInteractionSocketHandlers(authenticatedSocket, io);
 
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${authenticatedSocket.user._id}`);

@@ -1,9 +1,9 @@
 import { Server } from "socket.io";
-import Property from "../models/Property";
+import PropertyInteraction from "../models/PropertyInteraction";
 import {
   AuthenticatedSocket,
-  IPropertyResponse,
-  IPropertyCreateRequest,
+  IPropertyInteractionResponse,
+  IPropertyInteractionCreateRequest,
   ApiResponse,
 } from "../types";
 
@@ -11,12 +11,12 @@ interface SocketCallback {
   (response: ApiResponse): void;
 }
 
-const propertySocketHandlers = (
+const propertyInteractionSocketHandlers = (
   socket: AuthenticatedSocket,
   io: Server
 ): void => {
-  // Get all properties for the authenticated user
-  socket.on("getProperties", async (callback: SocketCallback) => {
+  // Get all property interactions for the authenticated user
+  socket.on("getPropertyInteractions", async (callback: SocketCallback) => {
     try {
       if (!socket.user) {
         return callback({
@@ -25,43 +25,46 @@ const propertySocketHandlers = (
         });
       }
 
-      const properties = await Property.find({
+      const propertyInteractions = await PropertyInteraction.find({
         userId: socket.user._id.toString(),
       }).lean();
 
-      const propertiesWithCurrentState: IPropertyResponse[] = properties.map(
-        (property) => {
-          const lastHistoryItem = property.history[property.history.length - 1];
+      const propertyInteractionsWithCurrentState: IPropertyInteractionResponse[] =
+        propertyInteractions.map((propertyInteraction) => {
+          const lastHistoryItem =
+            propertyInteraction.history[propertyInteraction.history.length - 1];
           return {
-            _id: property._id.toString(),
-            userId: property.userId,
-            propertyId: property.propertyId,
+            _id: propertyInteraction._id.toString(),
+            userId: propertyInteraction.userId,
+            propertyId: propertyInteraction.propertyId,
             columnIndex: lastHistoryItem.columnIndex,
             position: lastHistoryItem.position,
             status: lastHistoryItem.status,
             createdAt: lastHistoryItem.createdAt,
           };
-        }
-      );
+        });
 
       callback({
         success: true,
-        message: "Properties fetched successfully",
-        data: propertiesWithCurrentState,
+        message: "Property interactions fetched successfully",
+        data: propertyInteractionsWithCurrentState,
       });
     } catch (error: any) {
       callback({
         success: false,
-        message: "Error fetching properties",
+        message: "Error fetching property interactions",
         error: error.message,
       });
     }
   });
 
-  // Create or update a property
+  // Create or update a property interaction
   socket.on(
-    "updateProperty",
-    async (data: IPropertyCreateRequest, callback: SocketCallback) => {
+    "updatePropertyInteraction",
+    async (
+      data: IPropertyInteractionCreateRequest,
+      callback: SocketCallback
+    ) => {
       try {
         const { columnIndex, position, status, propertyId, comment } = data;
 
@@ -72,15 +75,17 @@ const propertySocketHandlers = (
           });
         }
 
-        const existingProperty = await Property.findOne({
+        const existingPropertyInteraction = await PropertyInteraction.findOne({
           userId: socket.user._id.toString(),
           propertyId: propertyId,
         });
 
-        if (existingProperty) {
+        if (existingPropertyInteraction) {
           // Get the last history item to compare with new state
           const lastHistoryItem =
-            existingProperty.history[existingProperty.history.length - 1];
+            existingPropertyInteraction.history[
+              existingPropertyInteraction.history.length - 1
+            ];
 
           // Check if the new state is different from the last history entry
           const isStateChanged =
@@ -90,7 +95,7 @@ const propertySocketHandlers = (
             lastHistoryItem.comment !== comment;
 
           if (isStateChanged) {
-            existingProperty.history.push({
+            existingPropertyInteraction.history.push({
               columnIndex,
               position,
               status,
@@ -98,26 +103,26 @@ const propertySocketHandlers = (
               createdAt: new Date(),
             });
 
-            await existingProperty.save();
+            await existingPropertyInteraction.save();
 
-            socket.emit("propertyUpdated", {
+            socket.emit("propertyInteractionUpdated", {
               success: true,
-              message: "Property updated successfully",
+              message: "Property interaction updated successfully",
             });
 
             callback({
               success: true,
-              message: "Property updated successfully",
+              message: "Property interaction updated successfully",
             });
           } else {
             // State hasn't changed, don't add to history
             callback({
               success: true,
-              message: "Property state unchanged, no update needed",
+              message: "Property interaction state unchanged, no update needed",
             });
           }
         } else {
-          const property = new Property({
+          const propertyInteraction = new PropertyInteraction({
             userId: socket.user._id.toString(),
             propertyId,
             history: [
@@ -131,22 +136,22 @@ const propertySocketHandlers = (
             ],
           });
 
-          await property.save();
+          await propertyInteraction.save();
 
-          socket.emit("propertyCreated", {
+          socket.emit("propertyInteractionCreated", {
             success: true,
-            message: "Property created successfully",
+            message: "Property interaction created successfully",
           });
 
           callback({
             success: true,
-            message: "Property created successfully",
+            message: "Property interaction created successfully",
           });
         }
       } catch (error: any) {
         callback({
           success: false,
-          message: "Error updating property",
+          message: "Error updating property interaction",
           error: error.message,
         });
       }
@@ -158,4 +163,4 @@ const propertySocketHandlers = (
   console.log(`User ${socket.user._id} joined room: user_${socket.user._id}`);
 };
 
-export default propertySocketHandlers;
+export default propertyInteractionSocketHandlers;

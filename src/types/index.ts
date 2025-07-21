@@ -30,8 +30,8 @@ export interface IUserLogin {
   password: string;
 }
 
-// Property History Types
-export interface IPropertyHistory {
+// Property Interaction History Types (formerly Property)
+export interface IPropertyInteractionHistory {
   columnIndex: number;
   position: number;
   status: "liked" | "disliked" | "deleted";
@@ -39,23 +39,23 @@ export interface IPropertyHistory {
   createdAt: Date;
 }
 
-export interface IProperty extends Document {
+export interface IPropertyInteraction extends Document {
   _id: Types.ObjectId;
   userId: string;
   propertyId: string;
-  history: IPropertyHistory[];
+  history: IPropertyInteractionHistory[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface IPropertyInput {
+export interface IPropertyInteractionInput {
   userId: string;
   propertyId: string;
-  history?: IPropertyHistory[];
+  history?: IPropertyInteractionHistory[];
 }
 
-// Property route request types
-export interface IPropertyCreateRequest {
+// Property Interaction route request types
+export interface IPropertyInteractionCreateRequest {
   columnIndex: number;
   position: number;
   status: "liked" | "disliked" | "deleted";
@@ -63,7 +63,7 @@ export interface IPropertyCreateRequest {
   comment?: string;
 }
 
-export interface IPropertyResponse {
+export interface IPropertyInteractionResponse {
   _id: string;
   userId: string;
   propertyId: string;
