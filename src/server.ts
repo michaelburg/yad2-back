@@ -5,7 +5,6 @@ import http from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 
-import propertyRoutes from "./routes/propertyRoutes";
 import socketAuth from "./middleware/socketAuth";
 import propertySocketHandlers from "./socket/propertySocketHandlers";
 import settingsRoutes from "./routes/settingsRoutes";
@@ -49,7 +48,6 @@ mongoose
 
 // Routes
 app.use("/api/users", userRoutes);
-app.use("/api/properties", propertyRoutes);
 app.use("/api/settings", settingsRoutes);
 
 // Basic health check route
