@@ -1,7 +1,12 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+import jwt from "jsonwebtoken";
+import { Socket } from "socket.io";
+import User from "../models/User";
+import { JWTPayload, AuthenticatedSocket } from "../types";
 
-const socketAuth = async (socket, next) => {
+const socketAuth = async (
+  socket: Socket,
+  next: (err?: Error) => void
+): Promise<void> => {
   try {
     const token =
       socket.handshake.auth.token || socket.handshake.headers.authorization;
@@ -16,7 +21,7 @@ const socketAuth = async (socket, next) => {
     const decoded = jwt.verify(
       cleanToken,
       process.env.JWT_SECRET || "your-secret-key"
-    );
+    ) as JWTPayload;
 
     const user = await User.findById(decoded.id);
 
@@ -26,9 +31,9 @@ const socketAuth = async (socket, next) => {
       );
     }
 
-    socket.user = user;
+    (socket as AuthenticatedSocket).user = user;
     next();
-  } catch (error) {
+  } catch (error: any) {
     if (error.name === "JsonWebTokenError") {
       return next(new Error("Authentication error: Invalid token"));
     }
@@ -41,4 +46,4 @@ const socketAuth = async (socket, next) => {
   }
 };
 
-module.exports = socketAuth;
+export default socketAuth;

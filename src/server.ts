@@ -1,14 +1,19 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const http = require("http");
-const { Server } = require("socket.io");
-const propertyRoutes = require("./routes/propertyRoutes");
-const socketAuth = require("./middleware/socketAuth");
-const propertySocketHandlers = require("./socket/propertySocketHandlers");
-require("dotenv").config();
-const settingsRoutes = require("./routes/settingsRoutes");
-const userRoutes = require("./routes/userRoutes");
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+
+import propertyRoutes from "./routes/propertyRoutes";
+import socketAuth from "./middleware/socketAuth";
+import propertySocketHandlers from "./socket/propertySocketHandlers";
+import settingsRoutes from "./routes/settingsRoutes";
+import userRoutes from "./routes/userRoutes";
+import { AuthenticatedSocket } from "./types";
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +27,11 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
+if (!MONGODB_URI) {
+  console.error("MONGODB_URI environment variable is required");
+  process.exit(1);
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -34,6 +44,7 @@ mongoose
   })
   .catch((error) => {
     console.error("MongoDB connection error:", error);
+    process.exit(1);
   });
 
 // Routes
@@ -51,13 +62,14 @@ io.use(socketAuth);
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.user._id}`);
+  const authenticatedSocket = socket as AuthenticatedSocket;
+  console.log(`User connected: ${authenticatedSocket.user._id}`);
 
   // Register property socket handlers
-  propertySocketHandlers(socket, io);
+  propertySocketHandlers(authenticatedSocket, io);
 
   socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.user._id}`);
+    console.log(`User disconnected: ${authenticatedSocket.user._id}`);
   });
 });
 
